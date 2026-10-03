@@ -1,0 +1,126 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  MASTER
+  PLAYER
+}
+
+enum PartyStatus {
+  LOBBY
+  IN_PROGRESS
+  FINISHED
+}
+
+enum PhaseStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  username  String
+  email     String?  @unique
+  password  String
+  role      Role     @default(PLAYER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hostedParties Party[] @relation("MasterParties")
+  characters    Character[]
+
+  @@map("users")
+}
+
+model Party {
+  id                 String      @id @default(auto()) @map("_id") @db.ObjectId
+  code               String      @unique
+  title              String
+  description        String?
+  themeKey           String      // e.g. "fantasia_medieval", "cyberpunk", "terror_eldritch"
+  themeTitle         String
+  password           String?     // optional room password
+  status             PartyStatus @default(LOBBY)
+  currentPhaseNumber Int         @default(1)
+  masterId           String      @db.ObjectId
+  master             User        @relation("MasterParties", fields: [masterId], references: [id])
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  characters Character[]
+  phases     Phase[]
+
+  @@map("parties")
+}
+
+model Character {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  partyId       String   @db.ObjectId
+  party         Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  userId        String?  @db.ObjectId
+  user          User?    @relation(fields: [userId], references: [id])
+  
+  playerName    String
+  name          String
+  class         String?  // Ex: Paladino, Mago, Netrunner, etc.
+  
+  // Customizações Visuais Detalhadas (Aparência / Skin)
+  sex                String   // "MASCULINO", "FEMININO", "ANDROGINO", "OUTRO"
+  race               String   // "Humano", "Elfo", "Anão", "Cyborg", "Tiefling", etc.
+  skinColor          String   // Código HEX ou descritor (ex: "#f5d0b0", "bronzeado", "azul-celeste")
+  hairStyle          String   // "careca", "longo_liso", "trancas", "moicano", "ondulado"
+  hairColor          String   // "#ffffff", "#1a1a1a", "neon_cyan", etc.
+  eyeColor           String   // "#3b82f6", "violeta", "ambar", etc.
+  bodyType           String   // "esguio", "atletico", "robusto", "musculoso", "pequeno"
+  facialFeatures     String?  // "cicatriz no olho direito", "barba cerrada", "tatuagem runica"
+  outfitType         String   // "armadura_placas", "traje_couro", "tunica_arcana", "jaqueta_tecnologica"
+  outfitPrimaryColor String   // Cor principal da roupa
+  outfitSecondaryColor String?// Cor secundária/detalhes
+  mainWeapon         String?  // "Espada Rúnica", "Cajado Astral", "Rifle Eletromagnético"
+  headgear           String?  // "Capuz Sombrio", "Elmo de Batalha", "Óculos HUD"
+  accessory          String?  // "Capa Rasgada", "Amuleto Brilhante", "Coldre Cibernético"
+  avatarUrl          String?  // Imagem/Sprite gerado ou preset visual
+  
+  // Atributos de RPG
+  health        Int      @default(100)
+  maxHealth     Int      @default(100)
+  energy        Int      @default(50)
+  bio           String?
+  isReady       Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("characters")
+}
+
+model Phase {
+  id                 String      @id @default(auto()) @map("_id") @db.ObjectId
+  partyId            String      @db.ObjectId
+  party              Party       @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  phaseNumber        Int
+  title              String
+  
+  // Entradas e Processamento de IA
+  masterNotes        String      // O que o mestre digitou livremente
+  formattedNarration String      // Texto refinado pela IA no tom do RPG
+  aiAtmosphere       String?     // Tom da cena (ex: "Sombrio, névoa espessa, tochas crepitando")
+  imagePrompt        String?     // Prompt gerado para a imagem
+  imageUrl           String?     // Imagem gerada da fase
+  suggestedHooks     String[]    // Ganchos/desafios rápidos sugeridos para os jogadores
+  
+  status             PhaseStatus @default(DRAFT)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@unique([partyId, phaseNumber])
+  @@map("phases")
+}
