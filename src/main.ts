@@ -7,9 +7,34 @@ import { DomainExceptionFilter } from './infrastructure/adapters/in/http/filters
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Configuração flexível de CORS (origens permitidas via .env ou padrões de desenvolvimento)
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+    : [
+        process.env.FRONTEND_URL || 'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:5174',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:3000',
+      ];
+
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Permite requisições sem origin (como Postman, ferramentas locais) ou se bater na lista permitida / desenvolvimento
+      if (
+        !origin ||
+        allowedOrigins.includes('*') ||
+        allowedOrigins.includes(origin) ||
+        process.env.NODE_ENV !== 'production'
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origem CORS não permitida: ${origin}`));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'X-Requested-With'],
   });
 
   app.setGlobalPrefix('api');

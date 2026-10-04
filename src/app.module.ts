@@ -6,6 +6,7 @@ import { ThemeModule } from './infrastructure/modules/theme.module';
 import { PartyModule } from './infrastructure/modules/party.module';
 import { CharacterModule } from './infrastructure/modules/character.module';
 import { PhaseModule } from './infrastructure/modules/phase.module';
+import { HealthController } from './infrastructure/adapters/in/http/controllers/health.controller';
 
 @Module({
   imports: [
@@ -20,5 +21,7 @@ import { PhaseModule } from './infrastructure/modules/phase.module';
     CharacterModule,
     PhaseModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}
+

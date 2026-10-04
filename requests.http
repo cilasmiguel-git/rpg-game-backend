@@ -1,0 +1,237 @@
+### ==============================================================================
+### ⚔️ RPG PARTY & MASTER LORE AI - REST CLIENT (TESTE DE ROTAS & BANCO DE DADOS)
+### ==============================================================================
+### Dica: Use com a extensão "REST Client" (ou Thunder Client / Postman) no VS Code.
+### Clique em "Send Request" acima de cada rota para executá-la.
+
+@baseUrl = http://localhost:3000/api
+@contentType = application/json
+
+# ------------------------------------------------------------------------------
+# VARIÁVEIS DE ESTADO (Preenchidas automaticamente ou manualmente após requisições)
+# ------------------------------------------------------------------------------
+@masterToken = 
+@guestToken = 
+@partyId = 
+@partyCode = 
+@characterId = 
+@phaseId = 
+
+
+### ==============================================================================
+### 1. HEALTH CHECK & CONEXÃO COM O MONGODB
+### ==============================================================================
+
+### 1.1 Verificar se a API está online
+GET {{baseUrl}}/health
+
+### 1.2 Testar conexão direta com o banco de dados MongoDB (Ping nativo)
+# Retorna 200 OK com latência e status do MongoDB, ou 503 com o erro detalhado
+GET {{baseUrl}}/health/db
+
+
+### ==============================================================================
+### 2. AUTENTICAÇÃO (AUTH)
+### ==============================================================================
+
+### 2.1 Cadastrar Novo Mestre de RPG
+# @name registerMaster
+POST {{baseUrl}}/auth/register-master
+Content-Type: {{contentType}}
+
+{
+  "username": "mestre_miguel",
+  "password": "SenhaSegura123!",
+  "email": "miguel@exemplo.com"
+}
+
+### 2.2 Login do Mestre (Copie o accessToken retornado e cole na variável @masterToken)
+# @name loginMaster
+POST {{baseUrl}}/auth/login-master
+Content-Type: {{contentType}}
+
+{
+  "username": "mestre_miguel",
+  "password": "SenhaSegura123!"
+}
+
+### 2.3 Obter Dados do Perfil Autenticado (Mestre ou Jogador)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+
+### 2.4 Jogador / Amigo Entra na Sala como Convidado (Guest)
+# @name joinGuest
+POST {{baseUrl}}/auth/join-guest
+Content-Type: {{contentType}}
+
+{
+  "partyCode": "A1B2C3",
+  "playerName": "Guerreiro Arthur",
+  "password": ""
+}
+
+
+### ==============================================================================
+### 3. TEMÁTICAS DE RPG & CATÁLOGO DE SKINS
+### ==============================================================================
+
+### 3.1 Listar Todas as Temáticas Disponíveis (Fantasia Medieval, Cyberpunk, etc.)
+GET {{baseUrl}}/themes
+
+### 3.2 Obter Catálogo Visual de uma Temática Específica
+GET {{baseUrl}}/themes/fantasia_medieval
+
+
+### ==============================================================================
+### 4. PARTIES & SESSÕES DE RPG
+### ==============================================================================
+
+### 4.1 Mestre Cria uma Nova Sala / Party
+# @name createParty
+POST {{baseUrl}}/parties
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "A Maldição das Minas de Phandelver",
+  "description": "Uma jornada sombria pelas cavernas esquecidas do vale.",
+  "themeKey": "fantasia_medieval",
+  "password": ""
+}
+
+### 4.2 Listar Campanhas / Salas Criadas pelo Mestre Logado
+GET {{baseUrl}}/parties/my-hosted
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+
+### 4.3 Consultar Sala pelo Código (Usado pelos amigos antes de entrar)
+# Substitua pelo código da sua party gerada
+GET {{baseUrl}}/parties/code/{{createParty.response.body.code}}
+
+### 4.4 Obter Detalhes da Party pelo ID
+GET {{baseUrl}}/parties/{{createParty.response.body.id}}
+
+### 4.5 Mestre Altera o Status da Party (LOBBY -> IN_PROGRESS -> FINISHED)
+PATCH {{baseUrl}}/parties/{{createParty.response.body.id}}/status
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "status": "IN_PROGRESS"
+}
+
+
+### ==============================================================================
+### 5. CRIAÇÃO VISUAL DE PERSONAGENS & SKINS
+### ==============================================================================
+
+### 5.1 Criar Personagem Visualmente Customizado na Sala
+# @name createCharacter
+POST {{baseUrl}}/parties/{{createParty.response.body.id}}/characters
+Content-Type: {{contentType}}
+
+{
+  "playerName": "Arthur",
+  "name": "Sir Eldrin de Valoria",
+  "characterClass": "Paladino da Luz",
+  "appearance": {
+    "sex": "MASCULINO",
+    "race": "Humano",
+    "skinColor": "#f0c7a0",
+    "hairStyle": "ondulado",
+    "hairColor": "#4a2d0b",
+    "eyeColor": "#3b82f6",
+    "bodyType": "atletico",
+    "facialFeatures": "Cicatriz no supercílio esquerdo",
+    "outfitType": "armadura_placas",
+    "outfitPrimaryColor": "#c0c0c0",
+    "outfitSecondaryColor": "#3b82f6",
+    "mainWeapon": "Espada Bastarda Dourada",
+    "headgear": "Elmo Alado",
+    "accessory": "Capa Azul Celeste"
+  },
+  "stats": {
+    "health": 120,
+    "maxHealth": 120,
+    "energy": 60,
+    "bio": "Cavaleiro devoto jurado à proteção dos reinos esquecidos."
+  }
+}
+
+### 5.2 Listar Todos os Personagens da Party
+GET {{baseUrl}}/parties/{{createParty.response.body.id}}/characters
+
+### 5.3 Obter Detalhes de um Personagem
+GET {{baseUrl}}/characters/{{createCharacter.response.body.id}}
+
+### 5.4 Alternar Estado de 'Pronto' (Ready) no Lobby
+PATCH {{baseUrl}}/characters/{{createCharacter.response.body.id}}/ready
+
+### 5.5 Atualizar Visual ou Atributos do Personagem
+PATCH {{baseUrl}}/characters/{{createCharacter.response.body.id}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Sir Eldrin, O Resiliente",
+  "appearance": {
+    "sex": "MASCULINO",
+    "race": "Humano",
+    "skinColor": "#f0c7a0",
+    "hairStyle": "curto",
+    "hairColor": "#4a2d0b",
+    "eyeColor": "#3b82f6",
+    "bodyType": "musculoso",
+    "facialFeatures": "Barba aparada e cicatriz",
+    "outfitType": "armadura_pesada_runica",
+    "outfitPrimaryColor": "#1a1a1a",
+    "outfitSecondaryColor": "#eab308",
+    "mainWeapon": "Machado Mítico do Trovão"
+  },
+  "isReady": true
+}
+
+### 5.6 Excluir Personagem
+DELETE {{baseUrl}}/characters/{{createCharacter.response.body.id}}
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+
+
+### ==============================================================================
+### 6. FASES DA CAMPANHA, NARRATIVA COM IA & IMAGENS
+### ==============================================================================
+
+### 6.1 Mestre Cria uma Nova Fase (IA organiza a narração e gera imagem da cena)
+# @name createPhase
+POST {{baseUrl}}/parties/{{createParty.response.body.id}}/phases
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "A Entrada das Minas Esquecidas",
+  "masterNotes": "O grupo chega na boca da caverna sob chuva forte. Há ossadas de goblins na entrada e tochas apagadas. Barulho de passos vindos da escuridão profunda.",
+  "autoGenerateImage": false
+}
+
+### 6.2 Mestre Solicita à IA para Refinar ou Regenerar a Narração
+POST {{baseUrl}}/phases/{{createPhase.response.body.id}}/regenerate-narration
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "updatedMasterNotes": "Adicione um pressentimento arcano no ar e o cheiro forte de enxofre."
+}
+
+### 6.3 Gerar Imagem Ilustrativa da Cena com IA
+POST {{baseUrl}}/phases/{{createPhase.response.body.id}}/generate-image
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+
+### 6.4 Mestre Publica a Fase para os Jogadores Verem
+PATCH {{baseUrl}}/phases/{{createPhase.response.body.id}}/publish
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+
+### 6.5 Obter a Fase Atual em Andamento da Sessão
+GET {{baseUrl}}/parties/{{createParty.response.body.id}}/phases/current
+
+### 6.6 Listar Todas as Fases da Campanha
+GET {{baseUrl}}/parties/{{createParty.response.body.id}}/phases
+
+### 6.7 Obter Detalhes de uma Fase Específica
+GET {{baseUrl}}/phases/{{createPhase.response.body.id}}
