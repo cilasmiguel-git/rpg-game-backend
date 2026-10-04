@@ -17,6 +17,20 @@ export interface GuestPlayerCommand {
   partyPassword?: string;
 }
 
+export interface RegisterPlayerCommand {
+  username: string;
+  password: string;
+  partyCode: string;
+  partyPassword?: string;
+}
+
+export interface LoginPlayerCommand {
+  username: string;
+  password: string;
+  partyCode: string;
+  partyPassword?: string;
+}
+
 export interface AuthTokenResult {
   accessToken: string;
   user: {
@@ -30,6 +44,8 @@ export interface AuthTokenResult {
 export interface AuthUseCasePort {
   registerMaster(command: RegisterMasterCommand): Promise<AuthTokenResult>;
   loginMaster(command: LoginMasterCommand): Promise<AuthTokenResult>;
+  registerPlayer(command: RegisterPlayerCommand): Promise<AuthTokenResult & { partyId: string }>;
+  loginPlayer(command: LoginPlayerCommand): Promise<AuthTokenResult & { partyId: string }>;
   joinPartyAsGuest(command: GuestPlayerCommand): Promise<AuthTokenResult & { partyId: string }>;
   validateUser(userId: string): Promise<UserEntity | null>;
 }

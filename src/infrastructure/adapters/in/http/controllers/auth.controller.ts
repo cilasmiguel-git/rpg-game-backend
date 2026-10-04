@@ -13,7 +13,9 @@ import { AUTH_USE_CASE_PORT, AuthUseCasePort } from '../../../../../core/ports/i
 import {
   GuestJoinPartyDto,
   LoginMasterDto,
+  LoginPlayerDto,
   RegisterMasterDto,
+  RegisterPlayerDto,
 } from '../dtos/auth.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
@@ -39,6 +41,28 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login efetuado com sucesso.' })
   async loginMaster(@Body() dto: LoginMasterDto) {
     return this.authUseCase.loginMaster(dto);
+  }
+
+  @Post('register-player')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Criar conta de jogador na sala com nome de usuário e senha próprios' })
+  @ApiResponse({
+    status: 201,
+    description: 'Jogador cadastrado e autenticado na party com token de acesso.',
+  })
+  async registerPlayer(@Body() dto: RegisterPlayerDto) {
+    return this.authUseCase.registerPlayer(dto);
+  }
+
+  @Post('login-player')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Entrar na sala como jogador já cadastrado usando usuário e senha próprios' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login do jogador validado com token vinculado à party.',
+  })
+  async loginPlayer(@Body() dto: LoginPlayerDto) {
+    return this.authUseCase.loginPlayer(dto);
   }
 
   @Post('join-guest')

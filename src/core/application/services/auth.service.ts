@@ -3,7 +3,9 @@ import {
   AuthUseCasePort,
   GuestPlayerCommand,
   LoginMasterCommand,
+  LoginPlayerCommand,
   RegisterMasterCommand,
+  RegisterPlayerCommand,
 } from '../../ports/in/auth.use-case.port';
 import { UserRepositoryPort } from '../../ports/out/user.repository.port';
 import { PartyRepositoryPort } from '../../ports/out/party.repository.port';
@@ -92,10 +94,10 @@ export class AuthService implements AuthUseCasePort {
     };
   }
 
-  async joinPartyAsGuest(command: GuestPlayerCommand): Promise<AuthTokenResult & { partyId: string }> {
-    const party = await this.partyRepo.findByCode(command.partyCode.toUpperCase().trim());
+  private async validatePartyAccess(partyCode: string, partyPassword?: string) {
+    const party = await this.partyRepo.findByCode(partyCode.toUpperCase().trim());
     if (!party) {
-      throw new EntityNotFoundException('Sessão/Party', command.partyCode);
+      throw new EntityNotFoundException('Sessão/Party', partyCode);
     }
 
     if (party.status === 'FINISHED') {
@@ -103,10 +105,92 @@ export class AuthService implements AuthUseCasePort {
     }
 
     if (party.password && party.password.trim() !== '') {
-      if (!command.partyPassword || command.partyPassword !== party.password) {
+      if (!partyPassword || partyPassword !== party.password) {
         throw new InvalidOperationException('Senha da sala incorreta.');
       }
     }
+
+    return party;
+  }
+
+  async registerPlayer(command: RegisterPlayerCommand): Promise<AuthTokenResult & { partyId: string }> {
+    const party = await this.validatePartyAccess(command.partyCode, command.partyPassword);
+
+    const username = command.username.trim();
+    if (!username) {
+      throw new InvalidOperationException('Nome de usuário é obrigatório.');
+    }
+
+    const existingUser = await this.userRepo.findByUsername(username);
+    if (existingUser) {
+      throw new InvalidOperationException('Nome de usuário já está em uso.');
+    }
+
+    const hashedPassword = await bcrypt.hash(command.password, 10);
+    const player = await this.userRepo.create({
+      username,
+      password: hashedPassword,
+      role: 'PLAYER',
+    });
+
+    const accessToken = this.tokenProvider.sign({
+      sub: player.id,
+      username: player.username,
+      role: 'PLAYER',
+      partyId: party.id,
+      partyCode: party.code,
+    });
+
+    return {
+      accessToken,
+      partyId: party.id,
+      user: {
+        id: player.id,
+        username: player.username,
+        role: 'PLAYER',
+      },
+    };
+  }
+
+  async loginPlayer(command: LoginPlayerCommand): Promise<AuthTokenResult & { partyId: string }> {
+    const party = await this.validatePartyAccess(command.partyCode, command.partyPassword);
+
+    const username = command.username.trim();
+    const user = await this.userRepo.findByUsername(username);
+    if (!user || user.role !== 'PLAYER') {
+      throw new InvalidOperationException('Credenciais inválidas.');
+    }
+
+    if (!user.password) {
+      throw new InvalidOperationException('Credenciais inválidas.');
+    }
+
+    const passwordMatch = await bcrypt.compare(command.password, user.password);
+    if (!passwordMatch) {
+      throw new InvalidOperationException('Credenciais inválidas.');
+    }
+
+    const accessToken = this.tokenProvider.sign({
+      sub: user.id,
+      username: user.username,
+      role: 'PLAYER',
+      partyId: party.id,
+      partyCode: party.code,
+    });
+
+    return {
+      accessToken,
+      partyId: party.id,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: 'PLAYER',
+      },
+    };
+  }
+
+  async joinPartyAsGuest(command: GuestPlayerCommand): Promise<AuthTokenResult & { partyId: string }> {
+    const party = await this.validatePartyAccess(command.partyCode, command.partyPassword);
 
     // Cria ou recupera jogador temporário para a party
     const guestUsername = `${command.playerName.trim()}_#${Math.floor(1000 + Math.random() * 9000)}`;
