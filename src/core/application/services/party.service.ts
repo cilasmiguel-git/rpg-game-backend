@@ -2,12 +2,18 @@ import {
   CreatePartyCommand,
   PartyLobbyDetails,
   PartyUseCasePort,
+  SaveBattlemapResponse,
 } from '../../ports/in/party.use-case.port';
 import { PartyRepositoryPort } from '../../ports/out/party.repository.port';
 import { CharacterRepositoryPort } from '../../ports/out/character.repository.port';
 import { PhaseRepositoryPort } from '../../ports/out/phase.repository.port';
 import { ThemeUseCasePort } from '../../ports/in/theme.use-case.port';
-import { PartyEntity, PartyStatus } from '../../domain/entities/party.entity';
+import {
+  BattlemapState,
+  DEFAULT_BATTLEMAP_STATE,
+  PartyEntity,
+  PartyStatus,
+} from '../../domain/entities/party.entity';
 import {
   EntityNotFoundException,
   UnauthorizedPartyAccessException,
@@ -49,6 +55,7 @@ export class PartyService implements PartyUseCasePort {
       themeTitle: theme.title,
       masterId: command.masterId,
       password: command.password ? command.password.trim() : undefined,
+      battlemapState: DEFAULT_BATTLEMAP_STATE,
     });
 
     const inviteLink = `${this.frontendBaseUrl}/party/join/${party.code}`;
@@ -117,5 +124,48 @@ export class PartyService implements PartyUseCasePort {
     }
 
     return party.password === password;
+  }
+
+  async getBattlemapState(partyIdOrCode: string): Promise<BattlemapState> {
+    let party: PartyEntity | null = null;
+    if (partyIdOrCode.length === 6) {
+      party = await this.partyRepo.findByCode(partyIdOrCode.toUpperCase().trim());
+    }
+    if (!party) {
+      party = await this.partyRepo.findById(partyIdOrCode);
+    }
+    if (!party) {
+      party = await this.partyRepo.findByCode(partyIdOrCode.toUpperCase().trim());
+    }
+
+    if (!party) {
+      throw new EntityNotFoundException('Sessão/Party', partyIdOrCode);
+    }
+
+    return party.battlemapState ?? DEFAULT_BATTLEMAP_STATE;
+  }
+
+  async updateBattlemapState(
+    partyId: string,
+    masterId: string,
+    state: BattlemapState,
+  ): Promise<SaveBattlemapResponse> {
+    const party = await this.partyRepo.findById(partyId);
+    if (!party) {
+      throw new EntityNotFoundException('Sessão/Party', partyId);
+    }
+
+    if (!party.isMaster(masterId)) {
+      throw new UnauthorizedPartyAccessException('Apenas o Mestre pode alterar o estado do Battlemap.');
+    }
+
+    const updated = await this.partyRepo.update(partyId, { battlemapState: state });
+
+    return {
+      success: true,
+      message: 'Estado do Battlemap salvo com sucesso!',
+      battlemapState: updated.battlemapState ?? DEFAULT_BATTLEMAP_STATE,
+      updatedAt: updated.updatedAt ?? new Date(),
+    };
   }
 }

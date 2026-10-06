@@ -5,7 +5,11 @@ import {
   PartyRepositoryPort,
   UpdatePartyData,
 } from '../../../../../../core/ports/out/party.repository.port';
-import { PartyEntity, PartyStatus } from '../../../../../../core/domain/entities/party.entity';
+import {
+  DEFAULT_BATTLEMAP_STATE,
+  PartyEntity,
+  PartyStatus,
+} from '../../../../../../core/domain/entities/party.entity';
 
 @Injectable()
 export class PrismaPartyRepository implements PartyRepositoryPort {
@@ -23,6 +27,7 @@ export class PrismaPartyRepository implements PartyRepositoryPort {
       raw.password ?? undefined,
       raw.status as PartyStatus,
       raw.currentPhaseNumber,
+      raw.battlemapState ?? DEFAULT_BATTLEMAP_STATE,
       raw.createdAt,
       raw.updatedAt,
     );
@@ -38,6 +43,7 @@ export class PrismaPartyRepository implements PartyRepositoryPort {
         themeTitle: data.themeTitle,
         masterId: data.masterId,
         password: data.password,
+        battlemapState: (data.battlemapState ?? DEFAULT_BATTLEMAP_STATE) as any,
       },
     });
     return this.toDomain(party);
@@ -62,14 +68,16 @@ export class PrismaPartyRepository implements PartyRepositoryPort {
   }
 
   async update(id: string, data: UpdatePartyData): Promise<PartyEntity> {
+    const updatePayload: any = {};
+    if (data.title !== undefined) updatePayload.title = data.title;
+    if (data.description !== undefined) updatePayload.description = data.description;
+    if (data.status !== undefined) updatePayload.status = data.status;
+    if (data.currentPhaseNumber !== undefined) updatePayload.currentPhaseNumber = data.currentPhaseNumber;
+    if (data.battlemapState !== undefined) updatePayload.battlemapState = data.battlemapState;
+
     const updated = await this.prisma.party.update({
       where: { id },
-      data: {
-        title: data.title,
-        description: data.description,
-        status: data.status,
-        currentPhaseNumber: data.currentPhaseNumber,
-      },
+      data: updatePayload,
     });
     return this.toDomain(updated);
   }

@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
-import { EntityNotFoundException, InvalidOperationException } from '../../domain/exceptions/domain.exception';
+import { InvalidOperationException } from '../../domain/exceptions/domain.exception';
 
 describe('AuthService player flow', () => {
   const makeUserRepo = () => ({

@@ -51,6 +51,7 @@ model Party {
   currentPhaseNumber Int         @default(1)
   masterId           String      @db.ObjectId
   master             User        @relation("MasterParties", fields: [masterId], references: [id])
+  battlemapState     Json?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 

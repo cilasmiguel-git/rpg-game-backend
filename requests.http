@@ -119,6 +119,59 @@ Content-Type: {{contentType}}
   "status": "IN_PROGRESS"
 }
 
+### 4.6 Obter Estado do Battlemap da Sala (por ID ou Código)
+GET {{baseUrl}}/parties/{{createParty.response.body.id}}/battlemap
+
+### 4.7 Mestre Salva / Atualiza Estado do Battlemap (Terrenos, Construções, Tokens)
+PUT {{baseUrl}}/parties/{{createParty.response.body.id}}/battlemap
+Authorization: Bearer {{loginMaster.response.body.accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "gridSize": 18,
+  "terrain": {
+    "0-0": "grass",
+    "1-0": "stone"
+  },
+  "placedAssets": [
+    {
+      "id": "placed_1728169000_a1b2",
+      "assetId": "ts_bld_castle_knights",
+      "name": "Castelo dos Cavaleiros (4x4)",
+      "imageUrl": "/assets/battlemap/tiny_swords/tiny_castle_blue.png",
+      "gridX": 4,
+      "gridY": 2,
+      "widthTiles": 4,
+      "heightTiles": 4,
+      "rotation": 0,
+      "opacity": 1.0,
+      "isObstacle": true,
+      "layer": "under",
+      "animation": {
+        "isAnimated": true,
+        "frames": 2,
+        "orientation": "vertical",
+        "duration": "0.8s"
+      }
+    }
+  ],
+  "tokens": [
+    {
+      "id": "t_warrior",
+      "name": "Guerreiro Eldrin",
+      "type": "player",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Eldrin",
+      "x": 3,
+      "y": 5,
+      "hp": 30,
+      "maxHp": 30,
+      "size": 1,
+      "color": "#3498db"
+    }
+  ]
+}
+
+
 
 ### ==============================================================================
 ### 5. CRIAÇÃO VISUAL DE PERSONAGENS & SKINS

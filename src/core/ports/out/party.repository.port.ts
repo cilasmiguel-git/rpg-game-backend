@@ -1,4 +1,4 @@
-import { PartyEntity, PartyStatus } from '../../domain/entities/party.entity';
+import { BattlemapState, PartyEntity, PartyStatus } from '../../domain/entities/party.entity';
 
 export interface CreatePartyData {
   code: string;
@@ -8,6 +8,7 @@ export interface CreatePartyData {
   themeTitle: string;
   masterId: string;
   password?: string;
+  battlemapState?: BattlemapState;
 }
 
 export interface UpdatePartyData {
@@ -15,6 +16,7 @@ export interface UpdatePartyData {
   description?: string;
   status?: PartyStatus;
   currentPhaseNumber?: number;
+  battlemapState?: BattlemapState;
 }
 
 export interface PartyRepositoryPort {

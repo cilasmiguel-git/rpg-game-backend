@@ -1,4 +1,4 @@
-import { PhaseEntity, PhaseStatus } from '../../domain/entities/phase.entity';
+import { PhaseEntity } from '../../domain/entities/phase.entity';
 
 export interface CreatePhaseCommand {
   partyId: string;
